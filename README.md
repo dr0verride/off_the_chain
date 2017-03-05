@@ -4,7 +4,7 @@ This is a small utility library meant to build up chained method calls seperatel
 
 ## Installation
 
-Add this line to your application's Gemfile. The *Chain* class will be includede in the gobal name space.
+Add this line to your application's Gemfile. The *Chain* class will be included in the gobal name space.
 
 ```ruby
 gem 'off_the_chain', require: 'off_the_chain/import'
