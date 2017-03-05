@@ -1,8 +1,12 @@
 require 'forwardable'
 
+require 'off_the_chain/chain/method_missing'
+require 'off_the_chain/chain/link'
+
 module OffTheChain
   class Chain
     extend Forwardable
+    include MethodMissing
 
     def call(subject)
       chain_links.reduce(subject) do |subj, a_link|
@@ -25,27 +29,12 @@ module OffTheChain
 
     alias_method :inspect, :to_s
 
-    def link(method_name, *args, &block)
-      push(parse_link(method_name,*args,&block))
+    def link(*args, &block)
+      push(parse_link(*args,&block))
     end
 
-    def self.link(method_name, *args, &block)
-      new([parse_link(method_name,*args,&block)])
-    end
-
-    def self.define(*method_names)
-      m = Module.new do
-        method_names.map(&:to_sym).each do |name|
-          define_method(name) do |*args,&block|
-            link(name,*args,&block)
-          end
-        end
-      end
-
-      Class.new(self) do
-        include m
-        extend m
-      end
+    def self.link(*args, &block)
+      new([parse_link(*args,&block)])
     end
 
     private
@@ -56,34 +45,25 @@ module OffTheChain
       @chain_links = chain_links
     end
 
-    def self.parse_link(method_name, *args, &block)
+    def self.parse_link(*args, &block)
+      method_name = args.shift
       case method_name
       when Symbol, String
         Link.new(method_name, *args, &block)
-      when RespondTo[:call]
-        raise ArgumentError.new("Callable chain links must be arity (1)") unless method_name.arity == 1
-        method_name
       else
-        raise ArgumentError.new("Chain links must be arguments to a #send message or callable")
+        if method_name.respond_to?(:call)
+          raise ArgumentError.new("Callable chain links must be arity (1)") unless method_name.arity == 1
+          method_name
+        elsif method_name.nil? && !block.nil?
+          raise ArgumentError.new("Callable chain links must be arity (1)") unless block.arity == 1
+          block
+        else
+          raise ArgumentError.new("Chain links must be arguments to a #send message or callable")
+        end
       end
     end
 
     def_delegator self, :parse_link
-
-    class Link
-      def initialize(op, *args, &block)
-        @op = op
-        @args = args
-        @block = block
-      end
-
-      def call(subject)
-        subject.public_send(op,*args,&block)
-      end
-
-      private
-      attr_reader :op, :args, :block
-    end
   end
 end
 

@@ -9,7 +9,15 @@ shared_examples "chain" do
   end
 
   let(:reject_chain) do
-    described_class.link(:reject) { |val| val.even? }
+    described_class.reject(&:even?)
+  end
+
+  let(:lambda_chain) do
+    map_chain.link -> (input) { input.reduce(10) { |sum, num| sum + num } }
+  end
+
+  let(:block_chain) do
+    map_chain.link { |input| input.reduce(10) { |sum, num| sum + num } }
   end
 
   let(:input) { [1,2,3,4,5] }
@@ -26,16 +34,24 @@ shared_examples "chain" do
     it { is_expected.to eq([3,6,9,12,15]) }
   end
 
-  describe ".define" do
-    subject { described_class.define(:map,:reduce,:reject).instance_methods }
-
-    it { is_expected.to include(:map,:reduce,:reject) }
-  end
-
   describe "#link" do
-    subject { reduce_chain.call(input) }
+    context "when passing in a method_name" do
+      subject { reduce_chain.call(input) }
 
-    it { is_expected.to eq(55) }
+      it { is_expected.to eq(55) }
+    end
+
+    context "when passing in a labmda" do
+      subject { lambda_chain.call(input) }
+
+      it { is_expected.to eq(55) }
+    end
+    
+    context "when passing in a block only" do
+      subject { block_chain.call(input) }
+
+      it { is_expected.to eq(55) }
+    end
   end
 
   describe "#push" do
