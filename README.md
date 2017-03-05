@@ -45,7 +45,7 @@ email_addresses = Chain.select(&:wants_email?).map(&:email)
 # This will apply the chain left to right
 good_emails = (basic_filter << email_addresses).reject(&:blank?)
 
-good_emails = apply( customer_records ) # => array of emails
+good_emails.apply( customer_records ) # => array of emails
 ```
 
 ## Why?
